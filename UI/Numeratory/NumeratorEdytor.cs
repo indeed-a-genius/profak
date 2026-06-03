@@ -10,7 +10,7 @@ class NumeratorEdytor : Edytor<Numerator>
 	public NumeratorEdytor()
 	{
 		var comboBoxPrzeznaczenie = Kontrolki.DropDownList();
-		var comboBoxFormat = Kontrolki.SuggestBox(["F/[Numer]", "F/[Numer:000000]", "F/[Numer:0000]/[Rok]", "F/[Numer:0000]/[Miesiac:00]/[Rok]", "F/[Numer]/[Data:yy/MM]", "F/[Numer:0000]/[Data:yyMMdd]"]);
+		var comboBoxFormat = Kontrolki.SuggestBox(["F/[Numer]", "F/[Numer:000000]", "F/[Numer:0000]/[Rok]", "F/[Numer:0000]/[Miesiac:00]/[Rok]", "F/[Numer]/[Data:yy/MM]", "F/[Numer:0000]/[Data:yyMMdd]", "F/[Numer:0000]/[MiesiacSprzedazy:00]/[RokSprzedazy]", "F/[Numer]/[DataSprzedazy:yy/MM]"]);
 		var textBoxGrupa = Kontrolki.TextBox();
 		var linkLabelGrupa = Kontrolki.LinkPomoc(PomocFormatGrupy);
 		textBoxPrzyklad = Kontrolki.TextBox();
@@ -61,5 +61,9 @@ class NumeratorEdytor : Edytor<Numerator>
 
 Pozostaw to pole puste, by numeracja była restartowana według roku, miesiąca lub dnia zgodnie z wybranym formatem numeru.
 
-Jeśli chcesz, by numeracja była resetowana rocznie, ale w numerze faktury występował także numer miesiąca, wprowadź tu wyrażenie zawierające [Rok], ale nie [Miesiac].";
+Jeśli chcesz, by numeracja była resetowana rocznie, ale w numerze faktury występował także numer miesiąca, wprowadź tu wyrażenie zawierające [Rok], ale nie [Miesiac].
+
+Dostępne tokeny oparte o datę wystawienia: [Numer], [Rok], [Miesiac], [Dzien], [Data].
+Tokeny oparte o datę sprzedaży: [RokSprzedazy], [MiesiacSprzedazy], [DzienSprzedazy], [DataSprzedazy].
+Przykład (numeracja wg miesiąca sprzedaży): F/[Numer:0000]/[MiesiacSprzedazy:00]/[RokSprzedazy]";
 }

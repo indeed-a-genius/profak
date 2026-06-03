@@ -40,6 +40,12 @@ partial class KontrahentEdytor : Edytor<Kontrahent>
 	private readonly TButton buttonWaluta;
 	private readonly TComboBox comboBoxWaluta;
 	private readonly TCheckBox checkBoxImportKSeF;
+	// Nowe pola: zagraniczny kontrahent
+	private readonly TCheckBox checkBoxZagraniczny;
+	private readonly TTextBox textBoxKrajKontrahenta;
+	private readonly TTextBox textBoxZagranicznyNumerVAT;
+	// Nowe pole: dodatkowe rachunki
+	private readonly TTextBox textBoxDodatkoweRachunki;
 	private readonly TTabPage tabPageFakturySprzedazy;
 	private readonly TTabPage tabPageFakturyZakupu;
 	private readonly TTabPage tabPagePodatki;
@@ -81,6 +87,14 @@ partial class KontrahentEdytor : Edytor<Kontrahent>
 		dateTimePickerOsobaFizycznaDataUrodzenia = Kontrolki.DatePicker(dopuscPusta: true);
 		buttonCertyfikatKSeF = Kontrolki.Button("Importuj certyfikat", akcja: CertyfikatKSeF);
 
+		// Zagraniczny kontrahent
+		checkBoxZagraniczny = Kontrolki.CheckBox("Zagraniczny (bez polskiego NIP)");
+		textBoxKrajKontrahenta = Kontrolki.TextBox(podpowiedz: "np. DE, FR, US");
+		textBoxZagranicznyNumerVAT = Kontrolki.TextBox(podpowiedz: "np. DE123456789");
+
+		// Dodatkowe rachunki bankowe (JSON)
+		textBoxDodatkoweRachunki = Kontrolki.TextArea(linie: 4, podpowiedz: "Format JSON: [{\"Rachunek\":\"PL...\",\"NazwaBanku\":\"...\",\"WalutaSkrot\":\"EUR\"}]");
+
 		fakturySprzedazy = new SpisZAkcjami<Faktura, FakturaSprzedazySpis>(new FakturaSprzedazyBezNabywcySpis(), new AkcjaNaSpisie<Faktura>[] { new EdytujRekordAkcja<Faktura, FakturaEdytor>(), new WydrukFakturyAkcja(), new PrzeladujAkcja<Faktura>() });
 		fakturyZakupu = new SpisZAkcjami<Faktura, FakturaZakupuSpis>(new FakturaZakupuBezSprzedawcySpis(), new AkcjaNaSpisie<Faktura>[] { new EdytujRekordAkcja<Faktura, FakturaEdytor>(), new PrzeladujAkcja<Faktura>() });
 
@@ -113,6 +127,12 @@ partial class KontrahentEdytor : Edytor<Kontrahent>
 		kontroler.Powiazanie(textBoxTokenKSeF, kontrahent => kontrahent.TokenKSeF);
 		kontroler.Powiazanie(comboBoxSrodowiskoKSeF, kontrahent => kontrahent.SrodowiskoKSeF);
 
+		// Powiązania nowych pól
+		kontroler.Powiazanie(checkBoxZagraniczny, kontrahent => kontrahent.CzyZagraniczny);
+		kontroler.Powiazanie(textBoxKrajKontrahenta, kontrahent => kontrahent.KrajKontrahenta);
+		kontroler.Powiazanie(textBoxZagranicznyNumerVAT, kontrahent => kontrahent.ZagranicznyNumerVAT);
+		kontroler.Powiazanie(textBoxDodatkoweRachunki, kontrahent => kontrahent.DodatkoweRachunki);
+
 		Wymagane(textBoxNazwa);
 		Walidacja(textBoxNIP, WalidacjaNIP, true);
 		Walidacja(textBoxNazwa, WalidacjaNazwy, true);
@@ -121,11 +141,14 @@ partial class KontrahentEdytor : Edytor<Kontrahent>
 		var danePodstawowe = new Siatka([0, -1, 0, 0], []);
 		danePodstawowe.DodajWiersz("Pełna nazwa", [(textBoxPelnaNazwa, 3)]);
 		danePodstawowe.DodajWiersz("NIP", [(textBoxNIP, 2), (buttonPobierzGUS, 1)]);
+		danePodstawowe.DodajWiersz([(checkBoxZagraniczny, 4)]);
+		danePodstawowe.DodajWiersz("Kraj", [(textBoxKrajKontrahenta, 1), Kontrolki.Label("Nr VAT UE"), (textBoxZagranicznyNumerVAT, 1)]);
 		danePodstawowe.DodajWiersz("Adres rejestrowy", [(textBoxAdresRejestrowy, 3)]);
 		danePodstawowe.DodajWiersz("Adres korespondencyjny", [(textBoxAdresKorespondencyjny, 3)]);
 		danePodstawowe.DodajWiersz("Telefon", [(textBoxTelefon, 3)]);
 		danePodstawowe.DodajWiersz("E-Mail", [(textBoxEMail, 3)]);
-		danePodstawowe.DodajWiersz("Rachunek bankowy", [textBoxRachunekBankowy, textBoxNazwaBanku, buttonSprawdzMF]);
+		danePodstawowe.DodajWiersz("Rachunek bankowy (PLN)", [textBoxRachunekBankowy, textBoxNazwaBanku, buttonSprawdzMF]);
+		danePodstawowe.DodajWiersz("Dodatkowe rachunki (walutowe)", [(textBoxDodatkoweRachunki, 3)]);
 		danePodstawowe.DodajWiersz("Stan", [(comboBoxStan, 3)]);
 		danePodstawowe.DodajWiersz([(labelSposobPlatnosci, 1), (comboBoxSposobPlatnosci, 2), (new Poziomo([buttonSposobPlatnosci]), 1)]);
 		danePodstawowe.DodajWiersz([(null, 1), (checkBoxTP, 3)]);
@@ -162,6 +185,8 @@ partial class KontrahentEdytor : Edytor<Kontrahent>
 	private string? WalidacjaNIP(string? nip)
 	{
 		if (String.IsNullOrWhiteSpace(nip)) return null;
+		// Dla zagranicznych kontrahentów pomijamy walidację polskiego NIP
+		if (Rekord.CzyZagraniczny) return null;
 		nip = nip.Replace("-", "");
 
 		var innyKontrahent = Kontekst.Baza.Kontrahenci.FirstOrDefault(kontrahent => kontrahent.NIP.Replace("-", "") == nip && kontrahent.Id != Rekord.Id);

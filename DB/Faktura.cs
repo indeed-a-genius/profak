@@ -219,6 +219,15 @@ public class Faktura : Rekord<Faktura>
 		if (String.Equals(pole, "miesiąc", StringComparison.CurrentCultureIgnoreCase)) return DataWystawienia.Month;
 		if (String.Equals(pole, "rok", StringComparison.CurrentCultureIgnoreCase)) return DataWystawienia.Year;
 		if (String.Equals(pole, "data", StringComparison.CurrentCultureIgnoreCase)) return DataWystawienia;
+		// Tokeny oparte o datę sprzedaży
+		if (String.Equals(pole, "dziensprzedazy", StringComparison.CurrentCultureIgnoreCase)) return DataSprzedazy.Day;
+		if (String.Equals(pole, "dzieńsprzedaży", StringComparison.CurrentCultureIgnoreCase)) return DataSprzedazy.Day;
+		if (String.Equals(pole, "miesiacsprzedazy", StringComparison.CurrentCultureIgnoreCase)) return DataSprzedazy.Month;
+		if (String.Equals(pole, "miesiącsprzedaży", StringComparison.CurrentCultureIgnoreCase)) return DataSprzedazy.Month;
+		if (String.Equals(pole, "roksprzedazy", StringComparison.CurrentCultureIgnoreCase)) return DataSprzedazy.Year;
+		if (String.Equals(pole, "roksprzedaży", StringComparison.CurrentCultureIgnoreCase)) return DataSprzedazy.Year;
+		if (String.Equals(pole, "datasprzedazy", StringComparison.CurrentCultureIgnoreCase)) return DataSprzedazy;
+		if (String.Equals(pole, "datasprzedaży", StringComparison.CurrentCultureIgnoreCase)) return DataSprzedazy;
 		return null;
 	}
 
@@ -448,8 +457,9 @@ public class Faktura : Rekord<Faktura>
 		NIPSprzedawcy = kontrahent.NIP;
 		NazwaSprzedawcy = kontrahent.PelnaNazwaLubNazwa;
 		DaneSprzedawcy = kontrahent.AdresRejestrowy;
-		RachunekBankowy = kontrahent.RachunekBankowy;
-		NazwaBanku = kontrahent.NazwaBanku;
+		var walutaSkrot = Waluta?.Skrot;
+		RachunekBankowy = kontrahent.RachunekBankowyDlaWaluty(walutaSkrot);
+		NazwaBanku = kontrahent.NazwaBankuDlaWaluty(walutaSkrot);
 		if (CzySprzedaz)
 		{
 			if (!String.IsNullOrWhiteSpace(uwagiSprzedawcy)) UwagiPubliczne = (UwagiPubliczne ?? "").Replace(uwagiSprzedawcy, "").Trim('\r', '\n');
