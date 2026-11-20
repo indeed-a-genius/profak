@@ -18,6 +18,10 @@ class DeklaracjaVatEdytor : Edytor<DeklaracjaVat>
 		var numericUpDownNetto23 = Kontrolki.NumericUpDown(poPrzecinku: 0);
 		var numericUpDownNettoWDT = Kontrolki.NumericUpDown(poPrzecinku: 0);
 		var numericUpDownNettoWNT = Kontrolki.NumericUpDown(poPrzecinku: 0);
+		var numericUpDownNettoEksport = Kontrolki.NumericUpDown(poPrzecinku: 0);
+		var numericUpDownNettoPozaKrajem = Kontrolki.NumericUpDown(poPrzecinku: 0);
+		var numericUpDownNettoUslugiUE = Kontrolki.NumericUpDown(poPrzecinku: 0);
+		var numericUpDownNettoOdwrotneObciazenie = Kontrolki.NumericUpDown(poPrzecinku: 0);
 		var numericUpDownNalezny5 = Kontrolki.NumericUpDown(poPrzecinku: 0);
 		var numericUpDownNalezny8 = Kontrolki.NumericUpDown(poPrzecinku: 0);
 		var numericUpDownNalezny23 = Kontrolki.NumericUpDown(poPrzecinku: 0);
@@ -41,6 +45,10 @@ class DeklaracjaVatEdytor : Edytor<DeklaracjaVat>
 		kontroler.Powiazanie(numericUpDownNetto23, deklaracja => deklaracja.Netto23);
 		kontroler.Powiazanie(numericUpDownNettoWDT, deklaracja => deklaracja.NettoWDT);
 		kontroler.Powiazanie(numericUpDownNettoWNT, deklaracja => deklaracja.NettoWNT);
+		kontroler.Powiazanie(numericUpDownNettoEksport, deklaracja => deklaracja.NettoEksport);
+		kontroler.Powiazanie(numericUpDownNettoPozaKrajem, deklaracja => deklaracja.NettoPozaKrajem);
+		kontroler.Powiazanie(numericUpDownNettoUslugiUE, deklaracja => deklaracja.NettoUslugiUE);
+		kontroler.Powiazanie(numericUpDownNettoOdwrotneObciazenie, deklaracja => deklaracja.NettoOdwrotneObciazenie);
 		kontroler.Powiazanie(numericUpDownNalezny5, deklaracja => deklaracja.Nalezny5);
 		kontroler.Powiazanie(numericUpDownNalezny8, deklaracja => deklaracja.Nalezny8);
 		kontroler.Powiazanie(numericUpDownNalezny23, deklaracja => deklaracja.Nalezny23);
@@ -64,6 +72,10 @@ class DeklaracjaVatEdytor : Edytor<DeklaracjaVat>
 		obliczenia.DodajWiersz([Kontrolki.Label("8%"), numericUpDownNetto8, numericUpDownNalezny8, null, Kontrolki.Label("Razem"), null, numericUpDownNaliczonyRazem]);
 		obliczenia.DodajWiersz([Kontrolki.Label("23%"), numericUpDownNetto23, numericUpDownNalezny23]);
 		obliczenia.DodajWiersz([Kontrolki.Label("WDT"), numericUpDownNettoWDT]);
+		obliczenia.DodajWiersz([Kontrolki.Label("Eksport"), numericUpDownNettoEksport]);
+		obliczenia.DodajWiersz([Kontrolki.Label("Poza krajem"), numericUpDownNettoPozaKrajem]);
+		obliczenia.DodajWiersz([Kontrolki.Label("w tym usługi UE"), numericUpDownNettoUslugiUE]);
+		obliczenia.DodajWiersz([Kontrolki.Label("Odwrotne obc."), numericUpDownNettoOdwrotneObciazenie]);
 		obliczenia.DodajWiersz([Kontrolki.Label("WNT"), numericUpDownNettoWNT, numericUpDownNaleznyWNT, null, Kontrolki.Label("Do wpłaty"), null, numericUpDownDoWplaty]);
 		obliczenia.DodajWiersz([Kontrolki.Label("Razem"), numericUpDownNettoRazem, numericUpDownNaleznyRazem, null, Kontrolki.Label("Do przeniesienia"), null, numericUpDownDoPrzeniesienia]);
 

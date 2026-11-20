@@ -20,6 +20,10 @@ class DeklaracjaVatBuilder
 		builder.Property(e => e.Netto23).HasDefaultValue(0).IsRequired();
 		builder.Property(e => e.NettoWDT).HasDefaultValue(0).IsRequired();
 		builder.Property(e => e.NettoWNT).HasDefaultValue(0).IsRequired();
+		builder.Property(e => e.NettoEksport).HasDefaultValue(0).IsRequired();
+		builder.Property(e => e.NettoPozaKrajem).HasDefaultValue(0).IsRequired();
+		builder.Property(e => e.NettoUslugiUE).HasDefaultValue(0).IsRequired();
+		builder.Property(e => e.NettoOdwrotneObciazenie).HasDefaultValue(0).IsRequired();
 		builder.Property(e => e.Nalezny5).HasDefaultValue(0).IsRequired();
 		builder.Property(e => e.Nalezny8).HasDefaultValue(0).IsRequired();
 		builder.Property(e => e.Nalezny23).HasDefaultValue(0).IsRequired();

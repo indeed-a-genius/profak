@@ -48,11 +48,12 @@ class DaneStartowe
 			baza.Zapisz(new StawkaVat { CzyDomyslna = false, Wartosc = 8, Skrot = "8%" });
 			baza.Zapisz(new StawkaVat { CzyDomyslna = false, Wartosc = 5, Skrot = "5%" });
 			baza.Zapisz(new StawkaVat { CzyDomyslna = false, Wartosc = 0, Skrot = "0%" });
-			baza.Zapisz(new StawkaVat { CzyDomyslna = false, Wartosc = 0, Skrot = "0% EX" });
+			baza.Zapisz(new StawkaVat { CzyDomyslna = false, Wartosc = 0, Skrot = "0% EX", Kategoria = KategoriaStawkiVat.Eksport });
 			baza.Zapisz(new StawkaVat { CzyDomyslna = false, Wartosc = 0, Skrot = "0% KR" });
-			baza.Zapisz(new StawkaVat { CzyDomyslna = false, Wartosc = 0, Skrot = "NP I" });
-			baza.Zapisz(new StawkaVat { CzyDomyslna = false, Wartosc = 0, Skrot = "NP II" });
-			baza.Zapisz(new StawkaVat { CzyDomyslna = false, Wartosc = 0, Skrot = "ZW" });
+			baza.Zapisz(new StawkaVat { CzyDomyslna = false, Wartosc = 0, Skrot = "NP I", Kategoria = KategoriaStawkiVat.PozaTerytoriumKraju });
+			baza.Zapisz(new StawkaVat { CzyDomyslna = false, Wartosc = 0, Skrot = "NP II", Kategoria = KategoriaStawkiVat.UslugiRozliczaneWUE });
+			baza.Zapisz(new StawkaVat { CzyDomyslna = false, Wartosc = 0, Skrot = "OO", Kategoria = KategoriaStawkiVat.OdwrotneObciazenie });
+			baza.Zapisz(new StawkaVat { CzyDomyslna = false, Wartosc = 0, Skrot = "ZW", Kategoria = KategoriaStawkiVat.Zwolniona });
 		}
 
 		if (!baza.Waluty.Any())

@@ -15,5 +15,6 @@ class StawkaVatBuilder
 		builder.Property(e => e.Skrot).HasDefaultValue("").IsRequired();
 		builder.Property(e => e.Wartosc).HasDefaultValue(0).IsRequired();
 		builder.Property(e => e.CzyDomyslna).HasDefaultValue(false).IsRequired();
+		builder.Property(e => e.Kategoria).HasDefaultValue(KategoriaStawkiVat.Krajowa).IsRequired();
 	}
 }

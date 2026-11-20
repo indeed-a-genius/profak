@@ -95,16 +95,39 @@ public class Generator
 					else if (pozycja.GTU == 13) { jpksprzedaz.GTU_13 = TWybor1.Item1; }
 
 					if (pozycja.StawkaVat == null) continue;
-					if (faktura.CzyWDT) { jpksprzedaz.K_21 ??= 0; jpksprzedaz.K_21 += pozycja.WartoscNetto; }
-					else if (pozycja.StawkaVat.CzyZW) { jpksprzedaz.K_10 ??= 0; jpksprzedaz.K_10 += pozycja.WartoscNetto; }
-					else if (pozycja.StawkaVat.CzyEX) { jpksprzedaz.K_22 ??= 0; jpksprzedaz.K_22 += pozycja.WartoscNetto; }
-					else if (pozycja.StawkaVat.CzyNP_I) { jpksprzedaz.K_11 ??= 0; jpksprzedaz.K_11 += pozycja.WartoscNetto; }
-					else if (pozycja.StawkaVat.CzyNP_II) { jpksprzedaz.K_12 ??= 0; jpksprzedaz.K_12 += pozycja.WartoscNetto; }
-					else if (pozycja.StawkaVat.Wartosc == 0) { jpksprzedaz.K_13 ??= 0; jpksprzedaz.K_13 += pozycja.WartoscNetto; }
-					else if (pozycja.StawkaVat.Wartosc == 5) { jpksprzedaz.K_15 ??= 0; jpksprzedaz.K_15 += pozycja.WartoscNetto; jpksprzedaz.K_16 ??= 0; jpksprzedaz.K_16 += pozycja.WartoscVat; }
-					else if (pozycja.StawkaVat.Wartosc == 7 || pozycja.StawkaVat.Wartosc == 8) { jpksprzedaz.K_17 ??= 0; jpksprzedaz.K_17 += pozycja.WartoscNetto; jpksprzedaz.K_18 ??= 0; jpksprzedaz.K_18 += pozycja.WartoscVat; }
-					else if (pozycja.StawkaVat.Wartosc == 22 || pozycja.StawkaVat.Wartosc == 23) { jpksprzedaz.K_19 ??= 0; jpksprzedaz.K_19 += pozycja.WartoscNetto; jpksprzedaz.K_20 ??= 0; jpksprzedaz.K_20 += pozycja.WartoscVat; }
-					else throw new ApplicationException($"Nieznana stawka VAT {pozycja.StawkaVat.Wartosc}% na fakturze {faktura.Numer}.");
+					switch (pozycja.StawkaVat.KategoriaDlaFaktury(faktura.CzyWDT))
+					{
+						case KategoriaStawkiVat.Zwolniona:
+							jpksprzedaz.K_10 ??= 0; jpksprzedaz.K_10 += pozycja.WartoscNetto;
+							break;
+						case KategoriaStawkiVat.DostawaWewnatrzwspolnotowa:
+							jpksprzedaz.K_21 ??= 0; jpksprzedaz.K_21 += pozycja.WartoscNetto;
+							break;
+						case KategoriaStawkiVat.Eksport:
+							jpksprzedaz.K_22 ??= 0; jpksprzedaz.K_22 += pozycja.WartoscNetto;
+							break;
+						case KategoriaStawkiVat.PozaTerytoriumKraju:
+							jpksprzedaz.K_11 ??= 0; jpksprzedaz.K_11 += pozycja.WartoscNetto;
+							break;
+						// Usługi z art. 100 ust. 1 pkt 4 wykazuje się w K_11 i dodatkowo w K_12
+						case KategoriaStawkiVat.UslugiRozliczaneWUE:
+							jpksprzedaz.K_11 ??= 0; jpksprzedaz.K_11 += pozycja.WartoscNetto;
+							jpksprzedaz.K_12 ??= 0; jpksprzedaz.K_12 += pozycja.WartoscNetto;
+							break;
+						// Odwrotne obciążenie: po uchyleniu art. 17 ust. 1 pkt 7 i 8 (XI 2019) JPK_V7M nie ma już
+						// pola sprzedawcy dla takich dostaw; K_31/K_32 służą rozliczeniu podatku należnego przez
+						// nabywcę (art. 17 ust. 1 pkt 5), więc sprzedaż "oo" nie jest tu wykazywana.
+						// Kwota jest widoczna w deklaracji jako "Odwrotne obc." i wymaga ręcznego rozliczenia.
+						case KategoriaStawkiVat.OdwrotneObciazenie:
+							break;
+						default:
+							if (pozycja.StawkaVat.Wartosc == 0) { jpksprzedaz.K_13 ??= 0; jpksprzedaz.K_13 += pozycja.WartoscNetto; }
+							else if (pozycja.StawkaVat.Wartosc == 5) { jpksprzedaz.K_15 ??= 0; jpksprzedaz.K_15 += pozycja.WartoscNetto; jpksprzedaz.K_16 ??= 0; jpksprzedaz.K_16 += pozycja.WartoscVat; }
+							else if (pozycja.StawkaVat.Wartosc == 7 || pozycja.StawkaVat.Wartosc == 8) { jpksprzedaz.K_17 ??= 0; jpksprzedaz.K_17 += pozycja.WartoscNetto; jpksprzedaz.K_18 ??= 0; jpksprzedaz.K_18 += pozycja.WartoscVat; }
+							else if (pozycja.StawkaVat.Wartosc == 22 || pozycja.StawkaVat.Wartosc == 23) { jpksprzedaz.K_19 ??= 0; jpksprzedaz.K_19 += pozycja.WartoscNetto; jpksprzedaz.K_20 ??= 0; jpksprzedaz.K_20 += pozycja.WartoscVat; }
+							else throw new ApplicationException($"Nieznana stawka VAT {pozycja.StawkaVat.Wartosc}% na fakturze {faktura.Numer}.");
+							break;
+					}
 				}
 
 				if (faktura.CzyTP) { jpksprzedaz.TP = TWybor1.Item1; }
@@ -191,6 +214,8 @@ public class Generator
 		jpk.Deklaracja.Pouczenia = 1;
 		jpk.Deklaracja.PozycjeSzczegolowe = new JPKDeklaracjaPozycjeSzczegolowe();
 		jpk.Deklaracja.PozycjeSzczegolowe.P_10 = LiczbaLubNull(deklaracja.NettoZW);
+		jpk.Deklaracja.PozycjeSzczegolowe.P_11 = LiczbaLubNull(deklaracja.NettoPozaKrajem);
+		jpk.Deklaracja.PozycjeSzczegolowe.P_12 = LiczbaLubNull(deklaracja.NettoUslugiUE);
 		jpk.Deklaracja.PozycjeSzczegolowe.P_13 = LiczbaLubNull(deklaracja.Netto0);
 		jpk.Deklaracja.PozycjeSzczegolowe.P_15 = LiczbaLubNull(deklaracja.Netto5);
 		jpk.Deklaracja.PozycjeSzczegolowe.P_16 = LiczbaLubNull(deklaracja.Nalezny5);
@@ -199,6 +224,7 @@ public class Generator
 		jpk.Deklaracja.PozycjeSzczegolowe.P_19 = LiczbaLubNull(deklaracja.Netto23);
 		jpk.Deklaracja.PozycjeSzczegolowe.P_20 = LiczbaLubNull(deklaracja.Nalezny23);
 		jpk.Deklaracja.PozycjeSzczegolowe.P_21 = LiczbaLubNull(deklaracja.NettoWDT);
+		jpk.Deklaracja.PozycjeSzczegolowe.P_22 = LiczbaLubNull(deklaracja.NettoEksport);
 		jpk.Deklaracja.PozycjeSzczegolowe.P_23 = LiczbaLubNull(deklaracja.NettoWNT);
 		jpk.Deklaracja.PozycjeSzczegolowe.P_24 = LiczbaLubNull(deklaracja.NaleznyWNT);
 		jpk.Deklaracja.PozycjeSzczegolowe.P_37 = LiczbaLubNull(deklaracja.NettoRazem);

@@ -9,6 +9,7 @@ partial class StawkaVatSpis : Spis<StawkaVat>
 	{
 		DodajKolumne(nameof(StawkaVat.Skrot), "Skrót", rozciagnij: true);
 		DodajKolumne(nameof(StawkaVat.Wartosc), "Wartość", wyrownajDoPrawej: true, format: "0");
+		DodajKolumne(nameof(StawkaVat.KategoriaFmt), "Kategoria", rozciagnij: true);
 		DodajKolumne(nameof(StawkaVat.CzyDomyslnaFmt), "Domyślna");
 		DodajKolumneId();
 	}

@@ -314,7 +314,10 @@ public class Generator
 				ksefWiersz.P_9A = dbPozycja.CenaNetto;
 				ksefWiersz.P_11 = Math.Abs(dbPozycja.WartoscNetto);
 			}
-			if (dbFaktura.ProceduraMarzy == ProceduraMarży.NieDotyczy) ksefWiersz.P_11Vat = Math.Abs(dbPozycja.WartoscVat);
+			// P_11Vat (kwota podatku dla pozycji, art. 106e ust. 10) ma sens tylko dla sprzedaży krajowej
+			// opodatkowanej rzeczywistą stawką - dla zw/WDT/eksportu/np/oo VAT jest z definicji zerowy
+			// i pole nie powinno być wysyłane (nie tylko z wartością 0, ale w ogóle pominięte).
+			if (dbFaktura.ProceduraMarzy == ProceduraMarży.NieDotyczy && dbPozycja.StawkaVat.KategoriaDlaFaktury(dbFaktura.CzyWDT) == KategoriaStawkiVat.Krajowa) ksefWiersz.P_11Vat = Math.Abs(dbPozycja.WartoscVat);
 			if (dbPozycja.GTU > 0) ksefWiersz.GTU = Enum.Parse<TGTU>("GTU_" + dbPozycja.GTU.ToString("00"));
 
 			if (dbFaktura.ProceduraMarzy != ProceduraMarży.NieDotyczy)
@@ -322,83 +325,22 @@ public class Generator
 				ksefFaktura.Fa.P_13_11 ??= 0;
 				ksefFaktura.Fa.P_13_11 += dbPozycja.WartoscBrutto;
 			}
-			else if (dbPozycja.StawkaVat.Wartosc == 0)
-			{
-				if (dbFaktura.CzyWDT)
-				{
-					ksefFaktura.Fa.P_13_6_2 ??= 0;
-					ksefFaktura.Fa.P_13_6_2 += (dbPozycja.WartoscNetto * ulamekZaliczki).Zaokragl();
-					ksefWiersz.P_12 = TStawkaPodatku.Item0_WDT;
-				}
-				else if (dbPozycja.StawkaVat.CzyZW)
-				{
-					ksefFaktura.Fa.P_13_7 ??= 0;
-					ksefFaktura.Fa.P_13_7 += (dbPozycja.WartoscNetto * ulamekZaliczki).Zaokragl();
-					ksefWiersz.P_12 = TStawkaPodatku.zw;
-				}
-				else if (dbPozycja.StawkaVat.CzyEX)
-				{
-					ksefFaktura.Fa.P_13_6_3 ??= 0;
-					ksefFaktura.Fa.P_13_6_3 += (dbPozycja.WartoscNetto * ulamekZaliczki).Zaokragl();
-					ksefWiersz.P_12 = TStawkaPodatku.Item0_EX;
-				}
-				else if (dbPozycja.StawkaVat.CzyNP_I)
-				{
-					ksefFaktura.Fa.P_13_8 ??= 0;
-					ksefFaktura.Fa.P_13_8 += (dbPozycja.WartoscNetto * ulamekZaliczki).Zaokragl();
-					ksefWiersz.P_12 = TStawkaPodatku.np_I;
-				}
-				else if (dbPozycja.StawkaVat.CzyNP_II)
-				{
-					ksefFaktura.Fa.P_13_9 ??= 0;
-					ksefFaktura.Fa.P_13_9 += (dbPozycja.WartoscNetto * ulamekZaliczki).Zaokragl();
-					ksefWiersz.P_12 = TStawkaPodatku.np_II;
-				}
-				else
-				{
-					ksefFaktura.Fa.P_13_6_1 ??= 0;
-					ksefFaktura.Fa.P_13_6_1 += (dbPozycja.WartoscNetto * ulamekZaliczki).Zaokragl();
-					ksefWiersz.P_12 = TStawkaPodatku.Item0_KR;
-				}
-			}
-			else if (dbPozycja.StawkaVat.Wartosc <= 5)
-			{
-				ksefFaktura.Fa.P_13_3 ??= 0;
-				ksefFaktura.Fa.P_14_3 ??= 0;
-				ksefFaktura.Fa.P_13_3 += (dbPozycja.WartoscNetto * ulamekZaliczki).Zaokragl();
-				ksefFaktura.Fa.P_14_3 += (dbPozycja.WartoscVat * ulamekZaliczki).Zaokragl();
-				if (ksefWiersz.KursWaluty != null)
-				{
-					ksefFaktura.Fa.P_14_3W ??= 0;
-					ksefFaktura.Fa.P_14_3W += (dbPozycja.WartoscVat * ksefWiersz.KursWaluty.Value).Zaokragl(2);
-				}
-				ksefWiersz.P_12 = TStawkaPodatku.Item5;
-			}
-			else if (dbPozycja.StawkaVat.Wartosc <= 8)
-			{
-				ksefFaktura.Fa.P_13_2 ??= 0;
-				ksefFaktura.Fa.P_14_2 ??= 0;
-				ksefFaktura.Fa.P_13_2 += (dbPozycja.WartoscNetto * ulamekZaliczki).Zaokragl();
-				ksefFaktura.Fa.P_14_2 += (dbPozycja.WartoscVat * ulamekZaliczki).Zaokragl();
-				if (ksefWiersz.KursWaluty != null)
-				{
-					ksefFaktura.Fa.P_14_2W ??= 0;
-					ksefFaktura.Fa.P_14_2W += (dbPozycja.WartoscVat * ksefWiersz.KursWaluty.Value).Zaokragl(2);
-				}
-				ksefWiersz.P_12 = TStawkaPodatku.Item8;
-			}
 			else
 			{
-				ksefFaktura.Fa.P_13_1 ??= 0;
-				ksefFaktura.Fa.P_14_1 ??= 0;
-				ksefFaktura.Fa.P_13_1 += (dbPozycja.WartoscNetto * ulamekZaliczki).Zaokragl();
-				ksefFaktura.Fa.P_14_1 += (dbPozycja.WartoscVat * ulamekZaliczki).Zaokragl();
-				if (ksefWiersz.KursWaluty != null)
-				{
-					ksefFaktura.Fa.P_14_1W ??= 0;
-					ksefFaktura.Fa.P_14_1W += (dbPozycja.WartoscVat * ksefWiersz.KursWaluty.Value).Zaokragl(2);
-				}
-				ksefWiersz.P_12 = TStawkaPodatku.Item23;
+				var stawkaPodatku = RozpoznajStawkePodatku(dbPozycja.StawkaVat, dbFaktura.CzyWDT);
+				var netto = (dbPozycja.WartoscNetto * ulamekZaliczki).Zaokragl();
+				var vat = (dbPozycja.WartoscVat * ulamekZaliczki).Zaokragl();
+				var vatWWalucie = ksefWiersz.KursWaluty != null ? (dbPozycja.WartoscVat * ksefWiersz.KursWaluty.Value).Zaokragl(2) : (decimal?)null;
+				DodajDoPodsumowania(ksefFaktura.Fa, stawkaPodatku, netto, vat, vatWWalucie);
+				// P_18 "odwrotne obciążenie" dotyczy nie tylko krajowego odwrotnego obciążenia (oo),
+				// ale każdego przypadku, w którym obowiązanym do rozliczenia podatku od wartości dodanej
+				// (VAT innego kraju UE) lub podatku o podobnym charakterze jest nabywca. Usługi z art. 100
+				// ust. 1 pkt 4 (np II) z definicji są rozliczane przez nabywcę w jego kraju UE.
+				// Kategoria "poza terytorium kraju" (np I) jest celowo pominięta - obejmuje też przypadki
+				// niebędące odwrotnym obciążeniem (np. sprzedaż B2C, nieruchomości za granicą), więc wymaga
+				// osobnej oceny, a nie automatycznego ustawienia.
+				if (stawkaPodatku == TStawkaPodatku.oo || stawkaPodatku == TStawkaPodatku.np_II) ksefFaktura.Fa.Adnotacje.P_18 = TWybor1_2.Item1;
+				ksefWiersz.P_12 = stawkaPodatku;
 			}
 			if (dbPozycja.CzyPrzedKorekta) ksefWiersz.StanPrzed = TWybor1.Item1;
 
@@ -458,57 +400,11 @@ public class Generator
 				{
 					if (dbPozycjaZaliczki.StawkaVat == null) continue;
 
-					if (dbZaliczka.CzyWDT)
-					{
-						ksefFaktura.Fa.P_13_6_2 ??= 0;
-						ksefFaktura.Fa.P_13_6_2 -= (dbPozycjaZaliczki.WartoscNetto * ulamekZaliczki).Zaokragl();
-					}
-					else if (dbPozycjaZaliczki.StawkaVat.Skrot.ToLower().Contains("zw"))
-					{
-						ksefFaktura.Fa.P_13_7 ??= 0;
-						ksefFaktura.Fa.P_13_7 -= (dbPozycjaZaliczki.WartoscNetto * ulamekZaliczki).Zaokragl();
-					}
-					else if (dbPozycjaZaliczki.StawkaVat.Wartosc == 0)
-					{
-						ksefFaktura.Fa.P_13_6_1 ??= 0;
-						ksefFaktura.Fa.P_13_6_1 -= (dbPozycjaZaliczki.WartoscNetto * ulamekZaliczki).Zaokragl();
-					}
-					else if (dbPozycjaZaliczki.StawkaVat.Wartosc <= 5)
-					{
-						ksefFaktura.Fa.P_13_3 ??= 0;
-						ksefFaktura.Fa.P_14_3 ??= 0;
-						ksefFaktura.Fa.P_13_3 -= (dbPozycjaZaliczki.WartoscNetto * ulamekZaliczki).Zaokragl();
-						ksefFaktura.Fa.P_14_3 -= (dbPozycjaZaliczki.WartoscVat * ulamekZaliczki).Zaokragl();
-						if (dbZaliczka.KursWaluty != 0 && dbZaliczka.KursWaluty != 1)
-						{
-							ksefFaktura.Fa.P_14_3W ??= 0;
-							ksefFaktura.Fa.P_14_3W -= dbPozycjaZaliczki.WartoscVat * dbZaliczka.KursWaluty;
-						}
-					}
-					else if (dbPozycjaZaliczki.StawkaVat.Wartosc <= 8)
-					{
-						ksefFaktura.Fa.P_13_2 ??= 0;
-						ksefFaktura.Fa.P_14_2 ??= 0;
-						ksefFaktura.Fa.P_13_2 -= (dbPozycjaZaliczki.WartoscNetto * ulamekZaliczki).Zaokragl();
-						ksefFaktura.Fa.P_14_2 -= (dbPozycjaZaliczki.WartoscVat * ulamekZaliczki).Zaokragl();
-						if (dbZaliczka.KursWaluty != 0 && dbZaliczka.KursWaluty != 1)
-						{
-							ksefFaktura.Fa.P_14_2W ??= 0;
-							ksefFaktura.Fa.P_14_2W -= dbPozycjaZaliczki.WartoscVat * dbZaliczka.KursWaluty;
-						}
-					}
-					else
-					{
-						ksefFaktura.Fa.P_13_1 ??= 0;
-						ksefFaktura.Fa.P_14_1 ??= 0;
-						ksefFaktura.Fa.P_13_1 -= (dbPozycjaZaliczki.WartoscNetto * ulamekZaliczki).Zaokragl();
-						ksefFaktura.Fa.P_14_1 -= (dbPozycjaZaliczki.WartoscVat * ulamekZaliczki).Zaokragl();
-						if (dbZaliczka.KursWaluty != 0 && dbZaliczka.KursWaluty != 1)
-						{
-							ksefFaktura.Fa.P_14_1W ??= 0;
-							ksefFaktura.Fa.P_14_1W -= dbPozycjaZaliczki.WartoscVat * dbZaliczka.KursWaluty;
-						}
-					}
+					var stawkaPodatkuZaliczki = RozpoznajStawkePodatku(dbPozycjaZaliczki.StawkaVat, dbZaliczka.CzyWDT);
+					var nettoZaliczki = (dbPozycjaZaliczki.WartoscNetto * ulamekZaliczki).Zaokragl();
+					var vatZaliczki = (dbPozycjaZaliczki.WartoscVat * ulamekZaliczki).Zaokragl();
+					var vatZaliczkiWWalucie = dbZaliczka.KursWaluty != 0 && dbZaliczka.KursWaluty != 1 ? (dbPozycjaZaliczki.WartoscVat * dbZaliczka.KursWaluty).Zaokragl(2) : (decimal?)null;
+					DodajDoPodsumowania(ksefFaktura.Fa, stawkaPodatkuZaliczki, -nettoZaliczki, -vatZaliczki, -vatZaliczkiWWalucie);
 				}
 			}
 		}
@@ -713,18 +609,26 @@ public class Generator
 			dbPozycja.Towar = new Towar();
 			dbPozycja.Towar.Nazwa = pozycja.P_7 ?? "";
 			dbPozycja.Towar.JednostkaMiary = dbPozycja.JednostkaMiary = new JednostkaMiary { Nazwa = pozycja.P_8A, Skrot = pozycja.P_8A };
-			dbPozycja.StawkaVat = new StawkaVat();
-			if (pozycja.P_12 == TStawkaPodatku.Item23) dbPozycja.StawkaVat = new StawkaVat { Wartosc = 23, Skrot = "23" };
-			else if (pozycja.P_12 == TStawkaPodatku.Item22) dbPozycja.StawkaVat = new StawkaVat { Wartosc = 22, Skrot = "22" };
-			else if (pozycja.P_12 == TStawkaPodatku.Item8) dbPozycja.StawkaVat = new StawkaVat { Wartosc = 8, Skrot = "8" };
-			else if (pozycja.P_12 == TStawkaPodatku.Item7) dbPozycja.StawkaVat = new StawkaVat { Wartosc = 7, Skrot = "7" };
-			else if (pozycja.P_12 == TStawkaPodatku.Item5) dbPozycja.StawkaVat = new StawkaVat { Wartosc = 5, Skrot = "5" };
-			else if (pozycja.P_12 == TStawkaPodatku.Item4) dbPozycja.StawkaVat = new StawkaVat { Wartosc = 4, Skrot = "4" };
-			else if (pozycja.P_12 == TStawkaPodatku.Item3) dbPozycja.StawkaVat = new StawkaVat { Wartosc = 3, Skrot = "3" };
-			else if (pozycja.P_12 == TStawkaPodatku.Item0_KR || pozycja.P_12 == TStawkaPodatku.Item0_WDT || pozycja.P_12 == TStawkaPodatku.Item0_EX) dbPozycja.StawkaVat = new StawkaVat { Wartosc = 0, Skrot = "0" };
-			else if (pozycja.P_12 == TStawkaPodatku.zw) dbPozycja.StawkaVat = new StawkaVat { Wartosc = 0, Skrot = "ZW" };
-			else if (pozycja.P_12 == TStawkaPodatku.np_I || pozycja.P_12 == TStawkaPodatku.np_II) dbPozycja.StawkaVat = new StawkaVat { Wartosc = 0, Skrot = "NP" };
-			else dbPozycja.StawkaVat = new StawkaVat { Wartosc = 23, Skrot = "23" };
+			dbPozycja.StawkaVat = pozycja.P_12 switch
+			{
+				TStawkaPodatku.Item23 => new StawkaVat { Wartosc = 23, Skrot = "23%" },
+				TStawkaPodatku.Item22 => new StawkaVat { Wartosc = 22, Skrot = "22%" },
+				TStawkaPodatku.Item8 => new StawkaVat { Wartosc = 8, Skrot = "8%" },
+				TStawkaPodatku.Item7 => new StawkaVat { Wartosc = 7, Skrot = "7%" },
+				TStawkaPodatku.Item5 => new StawkaVat { Wartosc = 5, Skrot = "5%" },
+				TStawkaPodatku.Item4 => new StawkaVat { Wartosc = 4, Skrot = "4%" },
+				TStawkaPodatku.Item3 => new StawkaVat { Wartosc = 3, Skrot = "3%" },
+				// WDT jest oznaczane na poziomie faktury (Faktura.CzyWDT), więc pozycji przypisywana jest zwykła stawka 0%
+				TStawkaPodatku.Item0_WDT => new StawkaVat { Wartosc = 0, Skrot = "0%" },
+				TStawkaPodatku.Item0_KR => new StawkaVat { Wartosc = 0, Skrot = "0% KR" },
+				TStawkaPodatku.Item0_EX => new StawkaVat { Wartosc = 0, Skrot = "0% EX", Kategoria = KategoriaStawkiVat.Eksport },
+				TStawkaPodatku.zw => new StawkaVat { Wartosc = 0, Skrot = "ZW", Kategoria = KategoriaStawkiVat.Zwolniona },
+				TStawkaPodatku.oo => new StawkaVat { Wartosc = 0, Skrot = "OO", Kategoria = KategoriaStawkiVat.OdwrotneObciazenie },
+				TStawkaPodatku.np_I => new StawkaVat { Wartosc = 0, Skrot = "NP I", Kategoria = KategoriaStawkiVat.PozaTerytoriumKraju },
+				TStawkaPodatku.np_II => new StawkaVat { Wartosc = 0, Skrot = "NP II", Kategoria = KategoriaStawkiVat.UslugiRozliczaneWUE },
+				_ => new StawkaVat { Wartosc = 23, Skrot = "23%" }
+			};
+			if (pozycja.P_12 == TStawkaPodatku.Item0_WDT) dbFaktura.CzyWDT = true;
 			if (dbPozycja.CzyWedlugCenBrutto)
 			{
 				dbPozycja.CenaNetto = (dbPozycja.CenaBrutto * 100m / (100 + dbPozycja.StawkaVat.Wartosc)).Zaokragl();
@@ -1069,8 +973,8 @@ public class Generator
 			// Zawsze ustawione przez Zbuduj:
 			ArgumentNullException.ThrowIfNull(pozycja.StawkaVat);
 			ArgumentNullException.ThrowIfNull(pozycja.JednostkaMiary);
-			var stawkaVat = baza.StawkiVat.FirstOrDefault(stawkaVat => stawkaVat.Skrot == pozycja.StawkaVat.Skrot);
-			if (stawkaVat == null) stawkaVat = baza.StawkiVat.FirstOrDefault(stawkaVat => stawkaVat.Wartosc == pozycja.StawkaVat.Wartosc);
+			var stawkaVat = baza.StawkiVat.FirstOrDefault(stawkaVat => stawkaVat.Skrot == pozycja.StawkaVat.Skrot && stawkaVat.Kategoria == pozycja.StawkaVat.Kategoria);
+			stawkaVat ??= baza.StawkiVat.FirstOrDefault(stawkaVat => stawkaVat.Kategoria == pozycja.StawkaVat.Kategoria && stawkaVat.Wartosc == pozycja.StawkaVat.Wartosc);
 			if (stawkaVat == null) baza.Zapisz(stawkaVat = pozycja.StawkaVat);
 			pozycja.StawkaVatRef = stawkaVat;
 			pozycja.StawkaVat = null;
@@ -1088,6 +992,107 @@ public class Generator
 			pozycja.TowarRef = towar;
 			pozycja.Towar = null;
 			if (towar != null) pozycja.JednostkaMiaryRef = towar.JednostkaMiaryRef;
+		}
+	}
+
+	/// <summary>
+	/// Odwzorowuje stawkę VAT ze słownika programu na wartość pola P_12 schematu FA(3).
+	/// Rozpoznawanie odbywa się po skrócie stawki (dla stawek 0%) oraz po jej wartości procentowej.
+	/// </summary>
+	private static TStawkaPodatku RozpoznajStawkePodatku(StawkaVat stawkaVat, bool czyWDT)
+	{
+		switch (stawkaVat.KategoriaDlaFaktury(czyWDT))
+		{
+			case KategoriaStawkiVat.Zwolniona: return TStawkaPodatku.zw;
+			case KategoriaStawkiVat.DostawaWewnatrzwspolnotowa: return TStawkaPodatku.Item0_WDT;
+			case KategoriaStawkiVat.Eksport: return TStawkaPodatku.Item0_EX;
+			case KategoriaStawkiVat.PozaTerytoriumKraju: return TStawkaPodatku.np_I;
+			case KategoriaStawkiVat.UslugiRozliczaneWUE: return TStawkaPodatku.np_II;
+			case KategoriaStawkiVat.OdwrotneObciazenie: return TStawkaPodatku.oo;
+		}
+
+		if (stawkaVat.Wartosc == 0) return TStawkaPodatku.Item0_KR;
+		if (stawkaVat.Wartosc == 23) return TStawkaPodatku.Item23;
+		if (stawkaVat.Wartosc == 22) return TStawkaPodatku.Item22;
+		if (stawkaVat.Wartosc == 8) return TStawkaPodatku.Item8;
+		if (stawkaVat.Wartosc == 7) return TStawkaPodatku.Item7;
+		if (stawkaVat.Wartosc == 5) return TStawkaPodatku.Item5;
+		if (stawkaVat.Wartosc == 4) return TStawkaPodatku.Item4;
+		if (stawkaVat.Wartosc == 3) return TStawkaPodatku.Item3;
+
+		// Stawki spoza katalogu FA(3) - przybliżane jak dotychczas
+		if (stawkaVat.Wartosc <= 5) return TStawkaPodatku.Item5;
+		if (stawkaVat.Wartosc <= 8) return TStawkaPodatku.Item8;
+		return TStawkaPodatku.Item23;
+	}
+
+	/// <summary>
+	/// Dopisuje wartość netto i kwotę podatku pozycji do właściwego pola podsumowania faktury (P_13_x / P_14_x),
+	/// zgodnie ze stawką podatku wyliczoną dla tej pozycji. Wartości ujemne pomniejszają podsumowanie
+	/// (rozliczenie faktur zaliczkowych).
+	/// </summary>
+	private static void DodajDoPodsumowania(FakturaFa fa, TStawkaPodatku stawkaPodatku, decimal netto, decimal vat, decimal? vatWWalucie)
+	{
+		switch (stawkaPodatku)
+		{
+			case TStawkaPodatku.Item23:
+			case TStawkaPodatku.Item22:
+				fa.P_13_1 = fa.P_13_1.GetValueOrDefault() + netto;
+				fa.P_14_1 = fa.P_14_1.GetValueOrDefault() + vat;
+				if (vatWWalucie.HasValue) fa.P_14_1W = fa.P_14_1W.GetValueOrDefault() + vatWWalucie.Value;
+				break;
+
+			case TStawkaPodatku.Item8:
+			case TStawkaPodatku.Item7:
+				fa.P_13_2 = fa.P_13_2.GetValueOrDefault() + netto;
+				fa.P_14_2 = fa.P_14_2.GetValueOrDefault() + vat;
+				if (vatWWalucie.HasValue) fa.P_14_2W = fa.P_14_2W.GetValueOrDefault() + vatWWalucie.Value;
+				break;
+
+			case TStawkaPodatku.Item5:
+				fa.P_13_3 = fa.P_13_3.GetValueOrDefault() + netto;
+				fa.P_14_3 = fa.P_14_3.GetValueOrDefault() + vat;
+				if (vatWWalucie.HasValue) fa.P_14_3W = fa.P_14_3W.GetValueOrDefault() + vatWWalucie.Value;
+				break;
+
+			// Ryczałt dla taksówek osobowych
+			case TStawkaPodatku.Item4:
+			case TStawkaPodatku.Item3:
+				fa.P_13_4 = fa.P_13_4.GetValueOrDefault() + netto;
+				fa.P_14_4 = fa.P_14_4.GetValueOrDefault() + vat;
+				if (vatWWalucie.HasValue) fa.P_14_4W = fa.P_14_4W.GetValueOrDefault() + vatWWalucie.Value;
+				break;
+
+			case TStawkaPodatku.Item0_KR:
+				fa.P_13_6_1 = fa.P_13_6_1.GetValueOrDefault() + netto;
+				break;
+
+			case TStawkaPodatku.Item0_WDT:
+				fa.P_13_6_2 = fa.P_13_6_2.GetValueOrDefault() + netto;
+				break;
+
+			case TStawkaPodatku.Item0_EX:
+				fa.P_13_6_3 = fa.P_13_6_3.GetValueOrDefault() + netto;
+				break;
+
+			case TStawkaPodatku.zw:
+				fa.P_13_7 = fa.P_13_7.GetValueOrDefault() + netto;
+				break;
+
+			// Dostawa towarów i świadczenie usług poza terytorium kraju
+			case TStawkaPodatku.np_I:
+				fa.P_13_8 = fa.P_13_8.GetValueOrDefault() + netto;
+				break;
+
+			// Usługi, o których mowa w art. 100 ust. 1 pkt 4 ustawy
+			case TStawkaPodatku.np_II:
+				fa.P_13_9 = fa.P_13_9.GetValueOrDefault() + netto;
+				break;
+
+			// Odwrotne obciążenie w obrocie krajowym
+			case TStawkaPodatku.oo:
+				fa.P_13_10 = fa.P_13_10.GetValueOrDefault() + netto;
+				break;
 		}
 	}
 
