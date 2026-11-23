@@ -287,7 +287,7 @@ public class Generator
 			ksefFaktura.Podmiot3.Add(ksefPodmiot3);
 		}
 
-		foreach (var dbPozycja in dbFaktura.Pozycje)
+		foreach (var dbPozycja in dbFaktura.Pozycje.OrderBy(e => e.LP).ThenBy(e => e.CzyPrzedKorekta ? 0 : 1).ThenBy(e => e.Id))
 		{
 			// Pobrane przez wywołanie w ZbudujXML
 			ArgumentNullException.ThrowIfNull(dbPozycja.StawkaVat);
