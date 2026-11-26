@@ -81,12 +81,32 @@ namespace ProFak.DB.Migrations
                         .HasColumnType("TEXT")
                         .HasDefaultValue(0m);
 
+                    b.Property<decimal>("NettoEksport")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("NettoOdwrotneObciazenie")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("NettoPozaKrajem")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue(0m);
+
                     b.Property<decimal>("NettoPozostale")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT")
                         .HasDefaultValue(0m);
 
                     b.Property<decimal>("NettoSrodkiTrwale")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("NettoUslugiUE")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT")
                         .HasDefaultValue(0m);
@@ -1119,6 +1139,11 @@ namespace ProFak.DB.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(false);
+
+                    b.Property<int>("Kategoria")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
 
                     b.Property<string>("Skrot")
                         .IsRequired()

@@ -13,6 +13,10 @@ public class DeklaracjaVat : Rekord<DeklaracjaVat>
 	public decimal Netto23 { get; set; }
 	public decimal NettoWDT { get; set; }
 	public decimal NettoWNT { get; set; }
+	public decimal NettoEksport { get; set; }
+	public decimal NettoPozaKrajem { get; set; }
+	public decimal NettoUslugiUE { get; set; }
+	public decimal NettoOdwrotneObciazenie { get; set; }
 
 	public decimal Nalezny5 { get; set; }
 	public decimal Nalezny8 { get; set; }
@@ -28,7 +32,9 @@ public class DeklaracjaVat : Rekord<DeklaracjaVat>
 
 	public string MiesiacFmt => Miesiac.ToString("MM/yyyy");
 
-	public decimal NettoRazem => NettoZW + Netto0 + Netto5 + Netto8 + Netto23 + NettoWDT + NettoWNT;
+	// NettoUslugiUE zawiera się w NettoPozaKrajem (K_12 jest podzbiorem K_11), więc nie jest tu dodawane.
+	// NettoOdwrotneObciazenie nie ma odpowiednika po stronie sprzedawcy w JPK_V7M - patrz komentarz w Przelicz.
+	public decimal NettoRazem => NettoZW + Netto0 + Netto5 + Netto8 + Netto23 + NettoWDT + NettoWNT + NettoEksport + NettoPozaKrajem;
 	public decimal NaleznyRazem => Nalezny5 + Nalezny8 + Nalezny23 + NaleznyWNT;
 	public decimal NaliczonyRazem => NaliczonyPrzeniesiony + NaliczonySrodkiTrwale + NaliczonyPozostale;
 
@@ -47,6 +53,10 @@ public class DeklaracjaVat : Rekord<DeklaracjaVat>
 		|| CzyPasuje(Netto23, fraza)
 		|| CzyPasuje(NettoWDT, fraza)
 		|| CzyPasuje(NettoWNT, fraza)
+		|| CzyPasuje(NettoEksport, fraza)
+		|| CzyPasuje(NettoPozaKrajem, fraza)
+		|| CzyPasuje(NettoUslugiUE, fraza)
+		|| CzyPasuje(NettoOdwrotneObciazenie, fraza)
 		|| CzyPasuje(Nalezny5, fraza)
 		|| CzyPasuje(Nalezny8, fraza)
 		|| CzyPasuje(Nalezny23, fraza)
@@ -104,6 +114,10 @@ public class DeklaracjaVat : Rekord<DeklaracjaVat>
 		Netto23 = 0;
 		NettoWDT = 0;
 		NettoWNT = 0;
+		NettoEksport = 0;
+		NettoPozaKrajem = 0;
+		NettoUslugiUE = 0;
+		NettoOdwrotneObciazenie = 0;
 
 		Nalezny5 = 0;
 		Nalezny8 = 0;
@@ -138,12 +152,28 @@ public class DeklaracjaVat : Rekord<DeklaracjaVat>
 				foreach (var pozycja in faktura.Pozycje)
 				{
 					if (pozycja.StawkaVat == null) continue;
-					if (faktura.CzyWDT) { NettoWDT += pozycja.WartoscNetto * faktura.KursWaluty * ulamekZaliczki; }
-					else if (pozycja.StawkaVat.Skrot.ToLower().Contains("zw")) { NettoZW += pozycja.WartoscNetto * faktura.KursWaluty * ulamekZaliczki; }
-					else if (pozycja.StawkaVat.Wartosc == 0) { Netto0 += pozycja.WartoscNetto * faktura.KursWaluty * ulamekZaliczki; }
-					else if (pozycja.StawkaVat.Wartosc <= 5) { Netto5 += pozycja.WartoscNetto * faktura.KursWaluty * ulamekZaliczki; Nalezny5 += pozycja.WartoscVat * faktura.KursWaluty * ulamekZaliczki; }
-					else if (pozycja.StawkaVat.Wartosc <= 8) { Netto8 += pozycja.WartoscNetto * faktura.KursWaluty * ulamekZaliczki; Nalezny8 += pozycja.WartoscVat * faktura.KursWaluty * ulamekZaliczki; }
-					else { Netto23 += pozycja.WartoscNetto * faktura.KursWaluty * ulamekZaliczki; Nalezny23 += pozycja.WartoscVat * faktura.KursWaluty * ulamekZaliczki; }
+					var netto = pozycja.WartoscNetto * faktura.KursWaluty * ulamekZaliczki;
+					var vat = pozycja.WartoscVat * faktura.KursWaluty * ulamekZaliczki;
+					switch (pozycja.StawkaVat.KategoriaDlaFaktury(faktura.CzyWDT))
+					{
+						case KategoriaStawkiVat.Zwolniona: NettoZW += netto; break;
+						case KategoriaStawkiVat.DostawaWewnatrzwspolnotowa: NettoWDT += netto; break;
+						case KategoriaStawkiVat.Eksport: NettoEksport += netto; break;
+						case KategoriaStawkiVat.PozaTerytoriumKraju: NettoPozaKrajem += netto; break;
+						// Usługi z art. 100 ust. 1 pkt 4 wykazuje się zarówno w K_11/P_11, jak i w K_12/P_12
+						case KategoriaStawkiVat.UslugiRozliczaneWUE: NettoPozaKrajem += netto; NettoUslugiUE += netto; break;
+						// Odwrotne obciążenie: po uchyleniu art. 17 ust. 1 pkt 7 i 8 (XI 2019) JPK_V7M nie ma już
+						// pola sprzedawcy dla takich dostaw, a K_31/K_32 (P_31/P_32) służą rozliczeniu podatku
+						// należnego przez nabywcę przy dostawach z art. 17 ust. 1 pkt 5. Kwota jest więc tylko
+						// ewidencjonowana informacyjnie i nie wchodzi do podstawy ani do generowanego JPK_V7M.
+						case KategoriaStawkiVat.OdwrotneObciazenie: NettoOdwrotneObciazenie += netto; break;
+						default:
+							if (pozycja.StawkaVat.Wartosc == 0) { Netto0 += netto; }
+							else if (pozycja.StawkaVat.Wartosc <= 5) { Netto5 += netto; Nalezny5 += vat; }
+							else if (pozycja.StawkaVat.Wartosc <= 8) { Netto8 += netto; Nalezny8 += vat; }
+							else { Netto23 += netto; Nalezny23 += vat; }
+							break;
+					}
 				}
 			}
 			else if (faktura.CzyZakup)
@@ -162,6 +192,10 @@ public class DeklaracjaVat : Rekord<DeklaracjaVat>
 		Netto23 = Netto23.Zaokragl(miejsca: 0);
 		NettoWDT = NettoWDT.Zaokragl(miejsca: 0);
 		NettoWNT = NettoWNT.Zaokragl(miejsca: 0);
+		NettoEksport = NettoEksport.Zaokragl(miejsca: 0);
+		NettoPozaKrajem = NettoPozaKrajem.Zaokragl(miejsca: 0);
+		NettoUslugiUE = NettoUslugiUE.Zaokragl(miejsca: 0);
+		NettoOdwrotneObciazenie = NettoOdwrotneObciazenie.Zaokragl(miejsca: 0);
 
 		Nalezny5 = Nalezny5.Zaokragl(miejsca: 0);
 		Nalezny8 = Nalezny8.Zaokragl(miejsca: 0);

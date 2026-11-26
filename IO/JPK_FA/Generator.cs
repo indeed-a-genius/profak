@@ -113,14 +113,37 @@ public class Generator
 				jpkwiersz.P_11 = pozycja.WartoscNetto;
 				jpkwiersz.P_11A = pozycja.WartoscBrutto;
 
-				if (faktura.CzyWDT) { jpkfaktura.P_13_5 ??= 0; jpkfaktura.P_13_5 += pozycja.WartoscNetto; jpkwiersz.P_12 = JPKFakturaWierszP_12.np; }
-				else if (pozycja.StawkaVat.CzyNP_I) { jpkfaktura.P_13_5 ??= 0; jpkfaktura.P_13_5 += pozycja.WartoscNetto; jpkwiersz.P_12 = JPKFakturaWierszP_12.np; }
-				else if (pozycja.StawkaVat.CzyZW) { jpkfaktura.P_13_7 ??= 0; jpkfaktura.P_13_7 += pozycja.WartoscNetto; jpkwiersz.P_12 = JPKFakturaWierszP_12.zw; }
-				else if (pozycja.StawkaVat.Wartosc == 0) { jpkfaktura.P_13_6 ??= 0; jpkfaktura.P_13_6 += pozycja.WartoscNetto; jpkwiersz.P_12 = JPKFakturaWierszP_12.Item0; }
-				else if (pozycja.StawkaVat.Wartosc == 5) { jpkfaktura.P_13_3 ??= 0; jpkfaktura.P_13_3 += pozycja.WartoscNetto; jpkfaktura.P_14_3 += pozycja.WartoscVat; jpkwiersz.P_12 = JPKFakturaWierszP_12.Item5; }
-				else if (pozycja.StawkaVat.Wartosc == 7 || pozycja.StawkaVat.Wartosc == 8) { jpkfaktura.P_13_2 ??= 0; jpkfaktura.P_13_2 += pozycja.WartoscNetto; jpkfaktura.P_14_2 += pozycja.WartoscVat; jpkwiersz.P_12 = JPKFakturaWierszP_12.Item8; }
-				else if (pozycja.StawkaVat.Wartosc == 22 || pozycja.StawkaVat.Wartosc == 23) { jpkfaktura.P_13_1 ??= 0; jpkfaktura.P_13_1 += pozycja.WartoscNetto; jpkfaktura.P_14_1 ??= 0; jpkfaktura.P_14_1 += pozycja.WartoscVat; jpkwiersz.P_12 = JPKFakturaWierszP_12.Item23; }
-				else throw new ApplicationException($"Nieznana stawka VAT {pozycja.StawkaVat.Wartosc}% na fakturze {faktura.Numer}.");
+				switch (pozycja.StawkaVat.KategoriaDlaFaktury(faktura.CzyWDT))
+				{
+					case KategoriaStawkiVat.Zwolniona:
+						jpkfaktura.P_13_7 ??= 0; jpkfaktura.P_13_7 += pozycja.WartoscNetto;
+						jpkwiersz.P_12 = JPKFakturaWierszP_12.zw;
+						break;
+					// WDT i eksport to sprzedaż opodatkowana stawką 0%
+					case KategoriaStawkiVat.DostawaWewnatrzwspolnotowa:
+					case KategoriaStawkiVat.Eksport:
+						jpkfaktura.P_13_6 ??= 0; jpkfaktura.P_13_6 += pozycja.WartoscNetto;
+						jpkwiersz.P_12 = JPKFakturaWierszP_12.Item0;
+						break;
+					// JPK_FA nie rozróżnia np I od np II
+					case KategoriaStawkiVat.PozaTerytoriumKraju:
+					case KategoriaStawkiVat.UslugiRozliczaneWUE:
+						jpkfaktura.P_13_5 ??= 0; jpkfaktura.P_13_5 += pozycja.WartoscNetto;
+						jpkwiersz.P_12 = JPKFakturaWierszP_12.np;
+						break;
+					case KategoriaStawkiVat.OdwrotneObciazenie:
+						jpkfaktura.P_13_4 ??= 0; jpkfaktura.P_13_4 += pozycja.WartoscNetto;
+						jpkfaktura.P_14_4 ??= 0;
+						jpkwiersz.P_12 = JPKFakturaWierszP_12.oo;
+						break;
+					default:
+						if (pozycja.StawkaVat.Wartosc == 0) { jpkfaktura.P_13_6 ??= 0; jpkfaktura.P_13_6 += pozycja.WartoscNetto; jpkwiersz.P_12 = JPKFakturaWierszP_12.Item0; }
+						else if (pozycja.StawkaVat.Wartosc == 5) { jpkfaktura.P_13_3 ??= 0; jpkfaktura.P_13_3 += pozycja.WartoscNetto; jpkfaktura.P_14_3 ??= 0; jpkfaktura.P_14_3 += pozycja.WartoscVat; jpkwiersz.P_12 = JPKFakturaWierszP_12.Item5; }
+						else if (pozycja.StawkaVat.Wartosc == 7 || pozycja.StawkaVat.Wartosc == 8) { jpkfaktura.P_13_2 ??= 0; jpkfaktura.P_13_2 += pozycja.WartoscNetto; jpkfaktura.P_14_2 ??= 0; jpkfaktura.P_14_2 += pozycja.WartoscVat; jpkwiersz.P_12 = JPKFakturaWierszP_12.Item8; }
+						else if (pozycja.StawkaVat.Wartosc == 22 || pozycja.StawkaVat.Wartosc == 23) { jpkfaktura.P_13_1 ??= 0; jpkfaktura.P_13_1 += pozycja.WartoscNetto; jpkfaktura.P_14_1 ??= 0; jpkfaktura.P_14_1 += pozycja.WartoscVat; jpkwiersz.P_12 = JPKFakturaWierszP_12.Item23; }
+						else throw new ApplicationException($"Nieznana stawka VAT {pozycja.StawkaVat.Wartosc}% na fakturze {faktura.Numer}.");
+						break;
+				}
 			}
 		}
 

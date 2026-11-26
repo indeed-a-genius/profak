@@ -31,7 +31,7 @@ public partial class Faktura : Wydruk
 			var walutaVAT = baza.Waluty.FirstOrDefault(waluta => waluta.CzyDomyslna);
 			var walutaSkrot = waluta?.Skrot ?? "zł";
 			var walutaVATSkrot = walutaVAT?.Skrot ?? walutaSkrot;
-			var jestvat = pozycje.Any(e => e.StawkaVat != null && !String.Equals(e.StawkaVat.Skrot, "ZW", StringComparison.CurrentCultureIgnoreCase)) && faktura.ProceduraMarzy == ProceduraMarży.NieDotyczy;
+			var jestvat = pozycje.Any(e => e.StawkaVat != null && e.StawkaVat.Kategoria != KategoriaStawkiVat.Zwolniona) && faktura.ProceduraMarzy == ProceduraMarży.NieDotyczy;
 			var jestrabat = pozycje.Any(e => e.RabatProcent > 0 || e.RabatCena > 0 || e.RabatWartosc > 0);
 
 			var fakturaDTO = new FakturaDTO();
