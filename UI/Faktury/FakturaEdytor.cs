@@ -430,17 +430,19 @@ partial class FakturaEdytor : Edytor<Faktura>
 		numericUpDownKurs.Enabled = !waluta.CzyDomyslna;
 		buttonKurs.Enabled = !waluta.CzyDomyslna;
 		if (waluta.CzyDomyslna && Rekord.KursWaluty != 1) numericUpDownKurs.Value = 1;
-		/*
-		var rachunekWaluty = Kontekst.Baza.RachunkiKontrahentow
+		// Jeśli sprzedawca ma zdefiniowany rachunek bankowy przypisany do wybranej waluty,
+		// podstaw go automatycznie zamiast zostawiać rachunek z poprzedniej waluty na fakturze.
+		var rachunkiWaluty = Kontekst.Baza.RachunkiKontrahentow
 			.Where(rachunekKontrahenta => rachunekKontrahenta.KontrahentId == Rekord.SprzedawcaId && rachunekKontrahenta.WalutaId == waluta.Id)
-			.FirstOrDefault();
-		if (rachunekWaluty != null)
+			.ToList();
+		// Rachunek już wybrany dla tej waluty (np. ręcznie przyciskiem albo przy wczytaniu zapisanej faktury) zostaje bez zmian.
+		if (rachunkiWaluty.Count > 0 && !rachunkiWaluty.Any(rachunekWaluty => rachunekWaluty.NumerRachunku == Rekord.RachunekBankowy))
 		{
+			var rachunekWaluty = rachunkiWaluty[0];
 			Rekord.RachunekBankowy = rachunekWaluty.NumerRachunku;
 			Rekord.NazwaBanku = rachunekWaluty.NazwaBanku;
 			kontroler.AktualizujKontrolki();
 		}
-		*/
 	}
 
 	private bool UstawSposobPlatnosci(Faktura rekord, SposobPlatnosci? sposobPlatnosci)
