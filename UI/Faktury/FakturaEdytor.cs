@@ -144,8 +144,8 @@ partial class FakturaEdytor : Edytor<Faktura>
 		kontroler.Powiazanie(comboBoxNazwaNabywcy, faktura => faktura.NazwaNabywcy);
 		kontroler.Powiazanie(textBoxDaneNabywcy, faktura => faktura.DaneNabywcy);
 
-		kontroler.Powiazanie(dateTimePickerDataWystawienia, faktura => faktura.DataWystawienia, UstawDateWystawienia);
-		kontroler.Powiazanie(dateTimePickerDataSprzedazy, faktura => faktura.DataSprzedazy);
+		kontroler.Powiazanie(dateTimePickerDataWystawienia, faktura => faktura.DataWystawienia, UstawDateWystawienia, AktualizujPodpowiedzNumeru);
+		kontroler.Powiazanie(dateTimePickerDataSprzedazy, faktura => faktura.DataSprzedazy, AktualizujPodpowiedzNumeru);
 		kontroler.Powiazanie(dateTimePickerDataWprowadzenia, faktura => faktura.DataWprowadzenia);
 		kontroler.Powiazanie(dateTimePickerTerminPlatnosci, faktura => faktura.TerminPlatnosci);
 
@@ -394,6 +394,25 @@ partial class FakturaEdytor : Edytor<Faktura>
 		buttonRachunek.Enabled = rachunki.Count > 0;
 	}
 
+	/// <summary>
+	/// Odświeża podpowiedź numeru faktury (numer, jaki zostanie nadany przy zapisie) na podstawie
+	/// bieżących dat dokumentu. Dzięki temu przy numeracji według daty sprzedaży zmiana miesiąca
+	/// daty sprzedaży od razu pokazuje numer z właściwym miesiącem i kolejnym numerem w tym miesiącu.
+	/// </summary>
+	private void AktualizujPodpowiedzNumeru()
+	{
+		if (Rekord == null || Kontekst == null) return;
+		if (!String.IsNullOrWhiteSpace(Rekord.Numer) || !Rekord.Numerator.HasValue) return;
+		try
+		{
+			textBoxNumer.PlaceholderText = Numerator.NadajNumer(Kontekst.Baza, Rekord.Numerator.Value, Rekord.Podstawienie, zwiekszLicznik: false);
+		}
+		catch (ApplicationException)
+		{
+			/* brak definicji numeratora lub błędny format - podpowiedź jest tylko pomocnicza */
+		}
+	}
+
 	private void UstawDateWystawienia(Faktura rekord, DateTime dataWystawienia)
 	{
 		if (rekord.DataWystawienia == dataWystawienia) return;
@@ -514,11 +533,7 @@ partial class FakturaEdytor : Edytor<Faktura>
 
 		textBoxDataKSeF.Text = Rekord.DataKSeF == null ? "" : Rekord.DataKSeF.Value.ToString(Wyglad.FormatCzasu);
 
-		if (String.IsNullOrWhiteSpace(Rekord.Numer) && Rekord.Numerator.HasValue)
-		{
-			var numer = Numerator.NadajNumer(Kontekst.Baza, Rekord.Numerator.Value, Rekord.Podstawienie, zwiekszLicznik: false);
-			textBoxNumer.PlaceholderText = numer;
-		}
+		AktualizujPodpowiedzNumeru();
 
 		if (Rekord.CzySprzedaz)
 		{
