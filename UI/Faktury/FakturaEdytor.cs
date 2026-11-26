@@ -6,6 +6,13 @@ namespace ProFak.UI;
 
 partial class FakturaEdytor : Edytor<Faktura>
 {
+	private const string DymekKursu = "Pobierz kurs z NBP";
+	// Automatyczne pobieranie kursu NBP po zmianie daty sprzedaży
+	private DateTime? dataSprzedazyKursu;
+	private bool czyKursDoPobrania;
+	private bool ustawianieKursu;
+	private CancellationTokenSource? pobieranieKursu;
+
 	private readonly TText labelRodzaj;
 	private readonly TTextBox textBoxNumer;
 	private readonly TTextBox textBoxDaneSprzedawcy;
@@ -127,14 +134,14 @@ partial class FakturaEdytor : Edytor<Faktura>
 
 		buttonRachunek.Height = 23;
 		buttonKurs.Width = 30;
-		Dymek(buttonKurs, "Pobierz kurs z NBP");
+		Dymek(buttonKurs, DymekKursu);
 
 		kontroler.Slownik<ProceduraMarży>(comboBoxProceduraMarzy);
 		kontroler.Slownik<SkutekKorekty>(comboBoxSkutekKorekty);
 
 		kontroler.Powiazanie(textBoxNumer, faktura => faktura.Numer);
 		kontroler.Powiazanie(comboBoxWaluta, faktura => faktura.WalutaRef);
-		kontroler.Powiazanie(numericUpDownKurs, faktura => faktura.KursWaluty);
+		kontroler.Powiazanie(numericUpDownKurs, faktura => faktura.KursWaluty, KursZmieniony);
 
 		kontroler.Powiazanie(comboBoxNIPSprzedawcy, faktura => faktura.NIPSprzedawcy);
 		kontroler.Powiazanie(comboBoxNazwaSprzedawcy, faktura => faktura.NazwaSprzedawcy);
@@ -145,7 +152,7 @@ partial class FakturaEdytor : Edytor<Faktura>
 		kontroler.Powiazanie(textBoxDaneNabywcy, faktura => faktura.DaneNabywcy);
 
 		kontroler.Powiazanie(dateTimePickerDataWystawienia, faktura => faktura.DataWystawienia, UstawDateWystawienia, AktualizujPodpowiedzNumeru);
-		kontroler.Powiazanie(dateTimePickerDataSprzedazy, faktura => faktura.DataSprzedazy, AktualizujPodpowiedzNumeru);
+		kontroler.Powiazanie(dateTimePickerDataSprzedazy, faktura => faktura.DataSprzedazy, () => { AktualizujPodpowiedzNumeru(); DataSprzedazyZmieniona(); });
 		kontroler.Powiazanie(dateTimePickerDataWprowadzenia, faktura => faktura.DataWprowadzenia);
 		kontroler.Powiazanie(dateTimePickerTerminPlatnosci, faktura => faktura.TerminPlatnosci);
 
@@ -488,6 +495,89 @@ partial class FakturaEdytor : Edytor<Faktura>
 		kontroler.AktualizujKontrolki();
 	}
 
+	/// <summary>
+	/// Po zmianie daty sprzedaży faktury w walucie obcej pobiera w tle kurs średni NBP z ostatniego dnia
+	/// roboczego przed dniem sprzedaży - tak samo jak przycisk "NBP". Pobieranie startuje z krótkim
+	/// opóźnieniem, żeby wpisywanie daty z klawiatury nie wysyłało zapytania po każdej cyfrze.
+	/// </summary>
+	private void DataSprzedazyZmieniona()
+	{
+		// Wywołanie przy wczytywaniu rekordu (przed RekordGotowy) - kurs zapisanej faktury zostaje bez zmian.
+		if (Rekord == null || Kontekst == null || dataSprzedazyKursu == null) return;
+		var dataSprzedazy = Rekord.DataSprzedazy.Date;
+		if (dataSprzedazy == dataSprzedazyKursu) return;
+		dataSprzedazyKursu = dataSprzedazy;
+
+		pobieranieKursu?.Cancel();
+		var waluta = Kontekst.Baza.ZnajdzLubNull(Rekord.WalutaRef);
+		if (waluta == null || waluta.CzyDomyslna) return;
+		czyKursDoPobrania = true;
+		var cts = pobieranieKursu = new CancellationTokenSource();
+		_ = PobierzKursWTle(waluta, dataSprzedazy, cts.Token);
+	}
+
+	private async Task PobierzKursWTle(Waluta waluta, DateTime dataSprzedazy, CancellationToken cancellationToken)
+	{
+		try
+		{
+			await Task.Delay(400, cancellationToken);
+			var (kurs, dataTabeli) = await IO.NBP.PobierzSredniKursWalutyZData(waluta, dataSprzedazy.AddDays(-1), cancellationToken);
+			if (cancellationToken.IsCancellationRequested || Rekord.DataSprzedazy.Date != dataSprzedazy || Rekord.WalutaRef != waluta.Ref) return;
+			ustawianieKursu = true;
+			try
+			{
+				Rekord.KursWaluty = kurs;
+				kontroler.AktualizujKontrolki();
+			}
+			finally
+			{
+				ustawianieKursu = false;
+			}
+			czyKursDoPobrania = false;
+			Dymek(buttonKurs, $"{DymekKursu}\nKurs {waluta.Skrot} z tabeli NBP z dnia {dataTabeli:d} pobrany automatycznie po zmianie daty sprzedaży.");
+		}
+		catch (OperationCanceledException)
+		{
+		}
+		catch (Exception exc)
+		{
+			// Bez komunikatu w trakcie edycji - ponowna próba nastąpi przy zapisie faktury (DokonczPobieranieKursu).
+			if (!cancellationToken.IsCancellationRequested) Dymek(buttonKurs, $"{DymekKursu}\nNie udało się automatycznie pobrać kursu: {exc.Message}");
+		}
+	}
+
+	private void KursZmieniony()
+	{
+		if (ustawianieKursu || dataSprzedazyKursu == null) return;
+		// Kurs wpisany ręcznie albo pobrany przyciskiem "NBP" ma pierwszeństwo przed pobieraniem automatycznym.
+		pobieranieKursu?.Cancel();
+		czyKursDoPobrania = false;
+	}
+
+	/// <summary>
+	/// Jeśli po zmianie daty sprzedaży kurs nie zdążył się pobrać (albo pobieranie się nie udało), pobiera go
+	/// przed zapisem w oknie postępu. Błąd nie blokuje zapisu - faktura zostaje z dotychczasowym kursem.
+	/// </summary>
+	private void DokonczPobieranieKursu()
+	{
+		pobieranieKursu?.Cancel();
+		if (!czyKursDoPobrania) return;
+		czyKursDoPobrania = false;
+		var waluta = Kontekst.Baza.ZnajdzLubNull(Rekord.WalutaRef);
+		if (waluta == null || waluta.CzyDomyslna) return;
+		var dataSprzedazy = Rekord.DataSprzedazy;
+		try
+		{
+			var kurs = Rekord.KursWaluty;
+			OknoPostepu.Uruchom(async cancellationToken => kurs = await IO.NBP.PobierzSredniKursWaluty(waluta, dataSprzedazy.AddDays(-1), cancellationToken));
+			Rekord.KursWaluty = kurs;
+		}
+		catch (Exception exc)
+		{
+			OknoKomunikatu.Ostrzezenie($"Nie udało się pobrać kursu NBP {waluta.Skrot} dla daty sprzedaży {dataSprzedazy:d}:\n{exc.Message}\n\nFaktura zostanie zapisana z dotychczasowym kursem {Rekord.KursWaluty}. W razie potrzeby popraw go ręcznie.");
+		}
+	}
+
 	protected override void PrzygotujRekord(Faktura rekord)
 	{
 		base.PrzygotujRekord(rekord);
@@ -507,6 +597,7 @@ partial class FakturaEdytor : Edytor<Faktura>
 		base.RekordGotowy();
 		UstawRazem();
 		UstawDostepnoscRachunkowKontrahenta();
+		dataSprzedazyKursu = Rekord.DataSprzedazy.Date;
 		wplaty.Spis.FakturaRef = Rekord;
 		wplaty.Spis.Kontekst = Kontekst;
 		pozycjeFaktury.Spis.FakturaRef = Rekord;
@@ -705,6 +796,7 @@ Pozostałe elementy tekstowe zostaną przekazane jako dodatkowy opis.";
 
 	public override void KoniecEdycji()
 	{
+		DokonczPobieranieKursu();
 		Rekord.PoprawNumeracjePozycji(Kontekst.Baza);
 		base.KoniecEdycji();
 	}
