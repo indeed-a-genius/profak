@@ -79,7 +79,7 @@ public class Generator
 		ksefFaktura.Podmiot1.DaneIdentyfikacyjne.Nazwa = dbFaktura.NazwaSprzedawcy;
 		ksefFaktura.Podmiot1.Adres = ZbudujAdres<TAdres>(dbFaktura.DaneSprzedawcy);
 		if (!String.IsNullOrEmpty(dbFaktura.Sprzedawca.AdresKorespondencyjny) && dbFaktura.Sprzedawca.AdresKorespondencyjny != dbFaktura.DaneSprzedawcy) ksefFaktura.Podmiot1.AdresKoresp = ZbudujAdres<FakturaPodmiot1AdresKoresp>(dbFaktura.Sprzedawca.AdresKorespondencyjny);
-		ksefFaktura.Podmiot1.DaneKontaktowe.Add(new FakturaPodmiot1DaneKontaktowe { Email = String.IsNullOrWhiteSpace(dbFaktura.Sprzedawca.EMail) ? null : dbFaktura.Sprzedawca.EMail, Telefon = String.IsNullOrWhiteSpace(dbFaktura.Sprzedawca.Telefon) ? null : dbFaktura.Sprzedawca.Telefon });
+		if (!String.IsNullOrWhiteSpace(dbFaktura.Sprzedawca.EMail) || !String.IsNullOrWhiteSpace(dbFaktura.Sprzedawca.Telefon)) ksefFaktura.Podmiot1.DaneKontaktowe.Add(new FakturaPodmiot1DaneKontaktowe { Email = String.IsNullOrWhiteSpace(dbFaktura.Sprzedawca.EMail) ? null : dbFaktura.Sprzedawca.EMail, Telefon = String.IsNullOrWhiteSpace(dbFaktura.Sprzedawca.Telefon) ? null : dbFaktura.Sprzedawca.Telefon });
 		ksefFaktura.Podmiot2 = new FakturaPodmiot2();
 		ksefFaktura.Podmiot2.DaneIdentyfikacyjne = new TPodmiot2();
 		ksefFaktura.Podmiot2.Adres = ZbudujAdres<TAdres>(dbFaktura.DaneNabywcy);
